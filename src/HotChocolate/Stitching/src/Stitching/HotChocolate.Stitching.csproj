@@ -6,13 +6,16 @@
     <RootNamespace>HotChocolate.Stitching</RootNamespace>
     <Description>Contains the Hot Chocolate GraphQL schema stitching layer.</Description>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Extra.HotChocolate.Stitching</PackageId>
+    <Version>13.9.0</Version>
   </PropertyGroup>
-
+  
   <ItemGroup>
-    <ProjectReference Include="..\..\..\AspNetCore\src\Transport.Http\HotChocolate.Transport.Http.csproj" />
-    <ProjectReference Include="..\..\..\Core\src\Core\HotChocolate.Core.csproj" />
-    <ProjectReference Include="..\..\..\Utilities\src\Utilities.Introspection\HotChocolate.Utilities.Introspection.csproj" />
-    <ProjectReference Include="..\Stitching.Abstractions\HotChocolate.Stitching.Abstractions.csproj" />
+    <PackageReference Include="HotChocolate" Version="13.9.0" />
+    <PackageReference Include="HotChocolate.Transport.Http" Version="13.9.0" />
+    <PackageReference Include="HotChocolate.Utilities.Introspection" Version="13.9.0" />
+    <PackageReference Include="HotChocolate.Stitching.Abstractions" Version="13.9.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
