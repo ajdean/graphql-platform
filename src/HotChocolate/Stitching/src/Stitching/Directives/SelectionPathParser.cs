@@ -1,6 +1,4 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using HotChocolate.Language;
 
@@ -26,8 +24,7 @@ internal static class SelectionPathParser
         {
             buffer = buffer.Slice(0, path.Length);
             Prepare(path, buffer);
-            var reader = new Utf8GraphQLReader(buffer);
-            var parser = new Utf8GraphQLParser(reader, ParserOptions.Default);
+            var parser = new StitchingUtf8GraphQLParser(buffer);
             return ParseSelectionPath(ref parser);
         }
         finally
@@ -50,7 +47,7 @@ internal static class SelectionPathParser
     }
 
     private static ImmutableStack<SelectionPathComponent> ParseSelectionPath(
-        ref Utf8GraphQLParser parser)
+        ref StitchingUtf8GraphQLParser parser)
     {
         var path = ImmutableStack<SelectionPathComponent>.Empty;
 
@@ -65,7 +62,7 @@ internal static class SelectionPathParser
     }
 
     private static SelectionPathComponent ParseSelectionPathComponent(
-        ref Utf8GraphQLParser parser)
+        ref StitchingUtf8GraphQLParser parser)
     {
         var name = parser.ParseName();
         var arguments = ParseArguments(ref parser);
@@ -73,7 +70,7 @@ internal static class SelectionPathParser
     }
 
     private static List<ArgumentNode> ParseArguments(
-        ref Utf8GraphQLParser parser)
+        ref StitchingUtf8GraphQLParser parser)
     {
         var list = new List<ArgumentNode>();
 
@@ -94,13 +91,13 @@ internal static class SelectionPathParser
         return list;
     }
 
-    private static ArgumentNode ParseArgument(ref Utf8GraphQLParser parser)
+    private static ArgumentNode ParseArgument(ref StitchingUtf8GraphQLParser parser)
     {
         var name = parser.ParseName();
 
         parser.ExpectColon();
 
-        var value = ParseValueLiteral(ref parser);
+        var value = parser.ParseValueLiteral();
 
         return new ArgumentNode
         (
@@ -109,28 +106,6 @@ internal static class SelectionPathParser
             value
         );
     }
-    private static IValueNode ParseValueLiteral(
-        ref Utf8GraphQLParser parser)
-    {
-        if (parser.Reader.Kind == TokenKind.Dollar)
-        {
-            return ParseVariable(ref parser);
-        }
-        return parser.ParseValueLiteral(true);
-    }
 
-    private static ScopedVariableNode ParseVariable(ref Utf8GraphQLParser parser)
-    {
-        parser.ExpectDollar();
-        var scope = parser.ParseName();
-        parser.ExpectColon();
-        var name = parser.ParseName();
-
-        return new ScopedVariableNode
-        (
-            null,
-            scope,
-            name
-        );
-    }
 }
+

@@ -311,14 +311,35 @@ public class RemoteQueryBuilder
     {
         foreach (var argument in arguments)
         {
-            if (argument.Value is ScopedVariableNode v)
+            yield return argument.WithValue(GetValue(argument.Value));
+        }
+    }
+
+    private static IValueNode GetValue(IValueNode valueNode)
+    {
+        switch (valueNode)
+        {
+            case ScopedVariableNode sv:
             {
-                yield return argument.WithValue(v.ToVariableNode());
+                return sv.ToVariableNode();
             }
-            else
+            case ObjectValueNode objectValueNode:
             {
-                yield return argument;
+                var newFields = objectValueNode.Fields
+                    .Select(field => new ObjectFieldNode(field.Name.Value, GetValue(field.Value)))
+                    .ToList();
+
+                return new ObjectValueNode(newFields);
             }
+            case ListValueNode listValueNode:
+            {
+                var newItems = listValueNode.Items.Select(GetValue).ToList();
+
+                return new ListValueNode(newItems);
+            }
+
+            default:
+                return valueNode;
         }
     }
 

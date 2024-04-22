@@ -433,7 +433,7 @@ public sealed class DelegateToRemoteSchemaMiddleware
     {
         foreach (var argument in component.Arguments)
         {
-            if (!field.Arguments.TryGetField(argument.Name.Value, out var arg))
+            if (!field.Arguments.TryGetField(argument.Name.Value, out var inputField))
             {
                 throw new QueryException(
                     ErrorBuilder.New()
@@ -445,12 +445,56 @@ public sealed class DelegateToRemoteSchemaMiddleware
                         .Build());
             }
 
-            if (argument.Value is ScopedVariableNode sv)
+            ResolveScopedVariableArgument(context, schemaName, argument.Value, inputField, variables, rewriter);
+        }
+    }
+
+    private static void ResolveScopedVariableArgument(IResolverContext context,
+        string schemaName,
+        IValueNode valueNode,
+        IInputField inputField,
+        ICollection<ScopedVariableValue> variables,
+        ExtractFieldQuerySyntaxRewriter rewriter
+        )
+    {
+        switch (valueNode)
+        {
+            case ScopedVariableNode sv:
             {
-                var variable = _resolvers.Resolve(context, sv, arg.Type);
+                var variable = _resolvers.Resolve(context, sv, inputField.Type);
                 var value = rewriter.RewriteValueNode(
-                    schemaName, arg.Type, variable.Value!);
+                    schemaName, inputField.Type, variable.Value!);
                 variables.Add(variable.WithValue(value));
+                break;
+            }
+            case ObjectValueNode objectValueNode:
+            {
+                foreach (var field in objectValueNode.Fields)
+                {
+                    var type = inputField.Type.NamedType();
+                    if ((type as InputObjectType)?.Fields.TryGetField(field.Name.Value, out var inputField2) != true)
+                    {
+                        throw new QueryException(
+                            ErrorBuilder.New()
+                                .SetMessage("Could not find field in {0}", type.GetType())
+                                .SetExtension("argument", field.Name.Value)
+                                .SetCode(ErrorCodes.Stitching.ArgumentNotFound)
+                                .Build());
+                    }
+
+                    ResolveScopedVariableArgument(context, schemaName, field.Value, inputField2!, variables, rewriter);
+                }
+
+                break;
+            }
+            case ListValueNode listValueNode:
+            {
+                foreach (var item in listValueNode.Items)
+                {
+                    ResolveScopedVariableArgument(context, schemaName, item, inputField, variables, rewriter);
+                }
+
+                break;
             }
         }
     }
