@@ -185,7 +185,7 @@ internal static class IntrospectionFormatter
             new NameNode(type.Name),
             CreateDescription(type.Description),
             Array.Empty<DirectiveNode>(),
-            Array.Empty<NamedTypeNode>(),
+            CreateNamedTypeRefs(type.Interfaces),
             CreateFields(type.Fields)
         );
     }
